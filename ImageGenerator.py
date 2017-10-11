@@ -11,9 +11,9 @@ TrainImageGenerator
 import cv2
 import numpy as np
 import random
-import imgtool as it
 import os
 import csv
+import imgtool as it
 
 class TrainImageGenerator:
     """ 深層学習用の画像データを1枚生成するクラス """
@@ -213,7 +213,7 @@ class TrainImageGenerator:
         # 加工したソース画像の Bouding rect の 最小正方サイズを取得
         brect = it.rect_of_mask( msk )
         msk_sq_size = max(brect[2:4])  # 最小正方形サイズ(=幅、高さの大きい方)
-
+        
         # 背景の画像サイズに合わせて拡大縮小
         scale1 = bgi_size/msk_sq_size # 背景画像とのサイズ比
         scale2 = random.uniform( self.minScale, self.maxScale )
@@ -228,7 +228,8 @@ class TrainImageGenerator:
         maxPosY = +0.5 + (0.5-self.minHeightUpperShowArea) * msk.shape[0] / bgi.shape[0]
         pos = ( random.uniform(-maxPosX,maxPosX), random.uniform(minPosY,maxPosY))
         params.pos = pos
-        
+
+
         # 背景とのクロマキー合成
         result = it.chromakey( bgi, fgi, msk, pos )
 
@@ -245,7 +246,21 @@ class TrainImageGenerator:
         sigma = random.uniform( self.__MIN_SMOOTH_SIGMA, self.maxSmoothSigma)
         result = cv2.GaussianBlur( result, self.__SMOOTH_KSIZE, sigma)
         params.smooth_sigma = sigma
-        
+
+
+        # 合成された前景画像の矩形を情報を計算する
+        cmask = it.chromakey_mask( bgi, msk, pos)
+        brect = it.rect_of_mask( cmask )
+        x_ratio, y_ratio = self.size/bgi.shape[1], self.size/bgi.shape[0]
+        rect =(
+            brect[0]*x_ratio,
+            brect[1]*y_ratio,
+            brect[2]*x_ratio,
+            brect[3]*y_ratio,
+         )
+        params.rect = rect
+
+
         # 生成画像とパラメータを返す
         return result, params
 
@@ -261,6 +276,7 @@ class TrainImageGenerator:
         """
         
         with open( filename, mode ) as file:
+            file.write( '[Config]\n' )
             file.write( 'size={0}\n'.format(self.size)) # 出力画像サイズ
             file.write( 'maxAspect={0}\n'.format(self.maxAspect))   # 最大アスペクト比, 最小は逆数
             file.write( 'minHeightUpperShowArea={0}\n'.format(self.minHeightUpperShowArea)) # 上部最小表示領域率
@@ -300,8 +316,9 @@ class TrainImageGenerator:
             self.scale = 1.0       # 倍率
             self.rot = 0           # 回転角度[deg]
             self.fgi_flip = False  # 左右反転
-            self.pos = (0.0, 0.0)  # 表示位置
-
+            self.pos = (0.0, 0.0)  # 相対表示位置
+            self.rect = (0.0, 0.0, 1.0, 1.0) # 絶対表示位置
+            
         
         def write_to_log( self, idname, filename, mode='a' ):
             
@@ -323,23 +340,52 @@ class TrainImageGenerator:
             data.append(self.fgi_flip)
             data.append(self.pos[0])
             data.append(self.pos[1])
+            data.append(self.rect[0])
+            data.append(self.rect[1])
+            data.append(self.rect[2])
+            data.append(self.rect[3])
             
-            with open( filename, mode ) as file:
+            with open( filename, mode, newline='' ) as file:
                 writer = csv.writer(file)
                 writer.writerow(data)
             
-            
+        
+        
         @staticmethod
         def write_header_to_log( filename, mode='a' ):
-
+            paramsMark = ['[ConfParams]']  # ConfParamsの開始マーク
+            
             header = ['id','output_size[pix]', 'gamma', 'smooth_sigma[pix]',
                         'bgi_only', 'bgi_filename', 'bgi_x[pix]','bgi_y[pix]',
                         'bgi_size[pix]', 'bgi_flip', 'fgi_filename', 'msk_filename',
-                        'aspect', 'scale', 'rotation', 'fgi_flip', 'pos_x', 'pos_y' ]
-
-            with open( filename, mode ) as file:
+                        'aspect', 'scale', 'rotation', 'fgi_flip', 'pos_x', 'pos_y',
+                        'rect_x', 'rect_y', 'rect_w', 'rect_h']
+            with open( filename, mode, newline='' ) as file:
                 writer = csv.writer(file)
+                writer.writerow(paramsMark)
                 writer.writerow(header)
+                
+                
+        # logfileから ConfigPramsのデータを取得する
+        @staticmethod
+        def read_log( filename ):
+            paramsMark = ['[ConfParams]']  # ConfParamsの開始マーク
+            
+            ret = []
+            with open( filename, 'r') as f:
+                reader = csv.reader(f)
+                
+                # ConfigParams まで移動
+                for row in reader:
+                    if row == paramsMark:
+                        break
+                    
+                # データ取得(ヘッダ付)
+                for row in reader:
+                    ret.append(row)
+            
+            return ret
+            
                 
         
         
@@ -376,11 +422,17 @@ if __name__ == '__main__':
 
     TrainImageGenerator.ConfParams.write_header_to_log(logfile)
     
-    for i in range(100):
+    for i in range(3):
+        
         # ランダムとそのパラメータで画像生成
         img1, params = gen.generateImageAtRandom(bgi_only=False)
+        p1 = (int(params.rect[0]), int(params.rect[1]))
+        p2 = (int(params.rect[0]+params.rect[2]-1), int(params.rect[1]+params.rect[3]-1))
+        cv2.rectangle( img1, p1, p2, (0,0,255))
+        
         cv2.imshow('image at random', img1)
         img2 = gen.generateImageByParams(params)
+        cv2.rectangle( img2, p1, p2, (0,0,255))
         cv2.imshow('image by params', img2)
         
         params.write_to_log( 'img{0:08d}'.format(i),logfile)
@@ -393,3 +445,8 @@ if __name__ == '__main__':
             break
 
     cv2.destroyAllWindows()
+    
+    
+    # 最後に logファイルを読み込んで表示
+    logdata = TrainImageGenerator.ConfParams.read_log( logfile )
+    print(logdata)

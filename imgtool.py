@@ -22,7 +22,7 @@ def chromakey( bgi, src, mask, pos = (0,0) ):
     @param pos bgiに対する相対位置座標(x,y)
     @return 合成された画像
     """
-    
+
     assert mask.dtype == np.uint8 and mask.ndim == 2, 'maskが8U1Cではありません'
     assert src.shape[:2] == mask.shape[:2], 'srcとmaskのサイズが異なります'
     
@@ -52,12 +52,53 @@ def chromakey( bgi, src, mask, pos = (0,0) ):
     lap_src = src[lap_top2:lap_btm2, lap_lft2:lap_rgt2,:]
     mask = mask[lap_top2:lap_btm2, lap_lft2:lap_rgt2] / 255.0
     mask = cv2.merge((mask,mask,mask))
- 
+    
     # 合成
     lap_bgi = lap_src*mask + (1.0-mask)*lap_bgi
     img[lap_top:lap_btm, lap_lft:lap_rgt, :] = lap_bgi
 
+    # 終了
     return img;
+    
+    
+def chromakey_mask( bgi, mask, pos = (0,0) ):
+    
+    '''
+    クロマキー合成後のマスク画像を取得する
+    @param bgi 背景画像
+    @param mask src画像のmask画像
+    @param pos bgiに対する相対位置座標(x,y)
+    @return クロマキー後のマスク画像
+    '''
+    assert mask.dtype == np.uint8 and mask.ndim == 2, 'maskが8U1Cではありません'
+    
+    # 高さ、幅
+    bgi_h, bgi_w = bgi.shape[:2]
+    msk_h, msk_w = mask.shape[:2]
+
+    # maskの４隅座標
+    lft = int((bgi_w - msk_w )/2 + pos[0]*bgi_w)
+    top = int((bgi_h - msk_h )/2 + pos[1]*bgi_h)
+    rgt = lft + msk_w
+    btm = top + msk_h
+    
+    # 重なっている領域の算出 & 抽出 ( bgi側 )
+    lap_lft = max( 0, lft )
+    lap_top = max( 0, top )
+    lap_rgt = min( bgi_w, rgt )
+    lap_btm = min( bgi_h, btm )
+    
+    # 重なっている領域の算出 & 抽出( mask側 )
+    lap_lft2 = lap_lft-lft
+    lap_top2 = lap_top-top
+    lap_rgt2 = lap_lft2 + (lap_rgt-lap_lft)
+    lap_btm2 = lap_top2 + (lap_btm-lap_top)
+    mask = mask[lap_top2:lap_btm2, lap_lft2:lap_rgt2]
+
+    # 最終 mask
+    img = np.zeros( bgi.shape[:2], dtype='ubyte' )
+    img[lap_top:lap_btm, lap_lft:lap_rgt] = mask
+    return img
 
     
 # ガンマ補正をする

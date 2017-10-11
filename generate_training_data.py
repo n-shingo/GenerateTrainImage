@@ -20,7 +20,7 @@ import imgtool as it
 =========================="""
 
 # 生成数画像枚数
-GENERATE_CNT = 10000
+GENERATE_CNT = 1000
 
 # 背景のみ(合成を行わない)フラグ
 BGI_ONLY = False
@@ -29,21 +29,23 @@ BGI_ONLY = False
 LOG_FILE = 'log.csv'
 
 # 背景画像の設定
-BGI_DIRS = ['/Volumes/Untitled/tsukuchare2017/TrainingData_DL/background/ImageCapture/20170708_141727/dir000000/',
-            '/Volumes/Untitled/tsukuchare2017/TrainingData_DL/background/ImageCapture/20170708_141727/dir001000/',
-            '/Volumes/Untitled/tsukuchare2017/TrainingData_DL/background/ImageCapture/20170708_143309/dir000000/',
+BGI_DIRS = ['D:/TrainingData_DL/background/ImageCapture/20170708_141727/dir000000/',
+            'D:/TrainingData_DL/background/ImageCapture/20170708_141727/dir001000/',
+            'D:/TrainingData_DL/background/ImageCapture/20170708_143309/dir000000/',
             ]
 BGI_EXT = 'png'  # 背景画像の拡張子
 
 # 前景&マスク画像の設定
-FGI_DIRS = ['/Volumes/Untitled/tsukuchare2017/TrainingData_DL/foreground/001/']
+FGI_DIRS = ['D:/TrainingData_DL/foreground/bfile-2/',
+            'D:/TrainingData_DL/foreground/ofile-2/',
+            ]
 FGI_EXT = 'jpg' # 前景画像の拡張子
 MSK_EXT = 'png' # Mask画像の拡張子
-MSK_SUF = '_msk' # Mask画像ファイル名の接尾語
+MSK_SUF = '_roi' # Mask画像ファイル名の接尾語
 
 # 保存先
 CNT_PER_DIR = 1000   #　1ディレクトリに保存する最大枚数
-SAVE_RTDIR = '/Users/shingo/tmp2/'  # 画像保存先ルートディレクトリ
+SAVE_RTDIR = 'D:/TrainingData_DL/TrainingData/'  # 画像保存先ルートディレクトリ
 SAVE_EXT = 'png'                                 # 保存画像の拡張子(jpg, png, bmp, ...)
 
 
