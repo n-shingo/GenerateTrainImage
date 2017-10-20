@@ -193,7 +193,7 @@ def rotate_img( src, deg, interpolation=cv2.INTER_LINEAR ):
     @return 回転された画像
     """
     h, w = src.shape[:2]
-    size = math.ceil(1.42 * max(w,h))
+    size = int(math.ceil(1.42 * max(w,h)))
     trn_mat = np.float32([[1,0,(size-w)/2],[0,1,(size-h)/2],[0,0,1]])
     rot_mat = cv2.getRotationMatrix2D( (size/2, size/2), deg, 1.0 )
     new_img = cv2.warpAffine( src, np.dot(rot_mat,trn_mat), (size,size), flags=interpolation)

@@ -11,7 +11,7 @@ TrainImageGenerator
 import cv2
 import numpy as np
 import random
-import os
+import os, sys
 import csv
 import imgtool as it
 
@@ -94,7 +94,7 @@ class TrainImageGenerator:
         # 背景と画像サイズを合わせる
         brect = it.rect_of_mask( msk )
         bigger_size = max(brect[2:4])  # 最小正方形サイズ(=幅、高さの大きい方)
-        scale = params.bgi_size / bigger_size
+        scale = params.bgi_size / float(bigger_size)
         scale = params.scale * scale
         fgi = it.resize_byfactor( fgi, scale )
         msk = it.resize_byfactor( msk, scale )
@@ -215,7 +215,7 @@ class TrainImageGenerator:
         msk_sq_size = max(brect[2:4])  # 最小正方形サイズ(=幅、高さの大きい方)
         
         # 背景の画像サイズに合わせて拡大縮小
-        scale1 = bgi_size/msk_sq_size # 背景画像とのサイズ比
+        scale1 = bgi_size/float(msk_sq_size) # 背景画像とのサイズ比
         scale2 = random.uniform( self.minScale, self.maxScale )
         scale = scale1 * scale2
         fgi = it.resize_byfactor( fgi, scale )
@@ -223,9 +223,9 @@ class TrainImageGenerator:
         params.scale = scale2
         
         # 位置
-        maxPosX = +0.5 + (0.5-self.minWidthShowArea) * msk.shape[1] / bgi.shape[1]
-        minPosY = -0.5 - (0.5-self.minHeightLowerShowArea) * msk.shape[0] / bgi.shape[0]
-        maxPosY = +0.5 + (0.5-self.minHeightUpperShowArea) * msk.shape[0] / bgi.shape[0]
+        maxPosX = +0.5 + (0.5-self.minWidthShowArea) * msk.shape[1] / float(bgi.shape[1])
+        minPosY = -0.5 - (0.5-self.minHeightLowerShowArea) * msk.shape[0] / float(bgi.shape[0])
+        maxPosY = +0.5 + (0.5-self.minHeightUpperShowArea) * msk.shape[0] / float(bgi.shape[0])
         pos = ( random.uniform(-maxPosX,maxPosX), random.uniform(minPosY,maxPosY))
         params.pos = pos
 
@@ -251,7 +251,7 @@ class TrainImageGenerator:
         # 合成された前景画像の矩形を情報を計算する
         cmask = it.chromakey_mask( bgi, msk, pos)
         brect = it.rect_of_mask( cmask )
-        x_ratio, y_ratio = self.size/bgi.shape[1], self.size/bgi.shape[0]
+        x_ratio, y_ratio = self.size/float(bgi.shape[1]), self.size/float(bgi.shape[0])
         rect =(
             brect[0]*x_ratio,
             brect[1]*y_ratio,
@@ -345,8 +345,8 @@ class TrainImageGenerator:
             data.append(self.rect[2])
             data.append(self.rect[3])
             
-            with open( filename, mode, newline='' ) as file:
-                writer = csv.writer(file)
+            with open( filename, mode ) as file:
+                writer = csv.writer( file, delimiter=',', lineterminator="\n")
                 writer.writerow(data)
             
         
@@ -360,8 +360,8 @@ class TrainImageGenerator:
                         'bgi_size[pix]', 'bgi_flip', 'fgi_filename', 'msk_filename',
                         'aspect', 'scale', 'rotation', 'fgi_flip', 'pos_x', 'pos_y',
                         'rect_x', 'rect_y', 'rect_w', 'rect_h']
-            with open( filename, mode, newline='' ) as file:
-                writer = csv.writer(file)
+            with open( filename, mode ) as file:
+                writer = csv.writer( file, delimiter=',', lineterminator="\n")
                 writer.writerow(paramsMark)
                 writer.writerow(header)
                 
@@ -392,6 +392,9 @@ class TrainImageGenerator:
 if __name__ == '__main__':
     
     # TrainImageGenerator クラスのチェックプログラム
+    print( 'python ' + sys.version )
+    print( 'opencv ' + cv2.__version__ )
+    print( '' )
     
     gen = TrainImageGenerator()
     gen.bgiList = ['test_bgi.jpg']
@@ -438,7 +441,7 @@ if __name__ == '__main__':
         params.write_to_log( 'img{0:08d}'.format(i),logfile)
         
         # 一致しているかチェック
-        print( '一致:', np.allclose(img1, img2) )
+        print( '一致:{0}'.format(np.allclose(img1, img2)) )
         
         # ESC で終了
         if cv2.waitKey() == 27:

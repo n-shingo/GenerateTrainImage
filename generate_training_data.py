@@ -20,7 +20,7 @@ import imgtool as it
 =========================="""
 
 # 生成数画像枚数
-GENERATE_CNT = 1000
+GENERATE_CNT = 20000
 
 # 背景のみ(合成を行わない)フラグ
 BGI_ONLY = False
@@ -41,7 +41,7 @@ FGI_DIRS = ['D:/TrainingData_DL/foreground/bfile-2/',
             ]
 FGI_EXT = 'jpg' # 前景画像の拡張子
 MSK_EXT = 'png' # Mask画像の拡張子
-MSK_SUF = '_roi' # Mask画像ファイル名の接尾語
+MSK_SUF = '_msk' # Mask画像ファイル名の接尾語
 
 # 保存先
 CNT_PER_DIR = 1000   #　1ディレクトリに保存する最大枚数
@@ -49,6 +49,8 @@ SAVE_RTDIR = 'D:/TrainingData_DL/TrainingData/'  # 画像保存先ルートデ�
 SAVE_EXT = 'png'                                 # 保存画像の拡張子(jpg, png, bmp, ...)
 
 
+#パイソンのバージョンメジャー番号
+PYTHON_VER = sys.version_info.major
 """==========================
 
    main関数
@@ -71,7 +73,7 @@ def main():
     # 保存先ディレクトリ名の生成
     datetime_str = dt.datetime.now().strftime('%Y%m%d_%H%M%S')  # 現在の時刻の文字列 ex) 20170704_165001
     save_dir = SAVE_RTDIR + datetime_str + '/'
-    print('保存先ディレクトリ:', save_dir)
+    print('保存先ディレクトリ:{0}'.format( save_dir ) )
     
     
     """==========================
@@ -80,11 +82,11 @@ def main():
     ig = IG.TrainImageGenerator()
     ig.size = 256  # 出力画像サイズ
     ig.maxAspect = 2.0   # 最大アスペクト比, 最小は逆数
-    ig.minHeightUpperShowArea = 0.3 # 上部最小表示領域率
+    ig.minHeightUpperShowArea = 0.7 # 上部最小表示領域率
     ig.minHeightLowerShowArea = 0.7 # 下部最小表示領域率
     ig.minWidthShowArea = 0.7 # 横最小表示領域率
     ig.minScale = 0.2 # 最小倍率
-    ig.maxScale = 1.0 # 最大倍率
+    ig.maxScale = 0.5 # 最大倍率
     ig.maxRotation = 30 # 最大回転角度[deg]
     ig.maxGamma = 2.5  # 最大ガンマ補正値 最小は逆数
     ig.maxSmoothSigma = 1.5 # 平滑化の最大σ値[pix]
@@ -100,17 +102,17 @@ def main():
     """==========================
        実行確認 yes or no
     =========================="""
-    print( '前景画像枚数:', len(ig.fgiList))
-    print( '背景画像枚数:', len(ig.bgiList))
-    print( '生成画像枚数:', GENERATE_CNT)
+    print( '前景画像枚数: {0}'.format(len(ig.fgiList)))
+    print( '背景画像枚数: {0}'.format(len(ig.bgiList)))
+    print( '生成画像枚数: {0}'.format(GENERATE_CNT))
     if( len(ig.fgiList) == 0 or len(ig.bgiList) == 0 ):
         print( '生成画像するための画像が見つかりませんでした.')
         print( 'プログラムを終了します.')
         sys.exit(0)
-    if sys.version_info.major == 3:
+    if PYTHON_VER == 3:
         res = input("実行しますか?[y/N]:").lower() #Python3
     else:
-        res = input_raw("実行しますか?[y/N]:").lower() #Python2
+        res = raw_input("実行しますか?[y/N]:").lower() #Python2
     if not res in ['y', 'ye', 'yes']:
         print( 'プログラムを終了します.' )
         sys.exit(0)
@@ -222,4 +224,7 @@ def get_fgi_and_msk_list( dirs, fgi_ext, msk_suf, msk_ext ):
     
 # main関数の実行
 if __name__ == '__main__':
+    print( 'python ' + sys.version )
+    print( 'opencv ' + cv2.__version__ )
+    print( '' )
     main()
